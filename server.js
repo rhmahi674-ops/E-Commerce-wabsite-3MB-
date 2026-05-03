@@ -26,7 +26,24 @@ async function initDB() {
       created_at TIMESTAMP DEFAULT NOW()
     )
   `;
-  console.log("Database table ready");
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS orders (
+      id SERIAL PRIMARY KEY,
+      full_name VARCHAR(255) NOT NULL,
+      email VARCHAR(255) NOT NULL,
+      phone VARCHAR(50),
+      address TEXT NOT NULL,
+      city VARCHAR(100),
+      zip VARCHAR(20),
+      items JSONB NOT NULL,
+      total DECIMAL(10,2) NOT NULL,
+      status VARCHAR(50) DEFAULT 'Processing',
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `;
+
+  console.log("Database tables ready");
 }
 
 // GET all products
@@ -101,6 +118,34 @@ app.delete("/api/products/:id", async (req, res) => {
       return res.status(404).json({ error: "Product not found" });
     }
     res.json({ message: "Product deleted", product: product[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// CREATE order
+app.post("/api/orders", async (req, res) => {
+  try {
+    const { full_name, email, phone, address, city, zip, items, total } = req.body;
+    if (!full_name || !email || !address || !items || !total) {
+      return res.status(400).json({ error: "Name, email, address, items and total are required" });
+    }
+    const order = await sql`
+      INSERT INTO orders (full_name, email, phone, address, city, zip, items, total)
+      VALUES (${full_name}, ${email}, ${phone || ""}, ${address}, ${city || ""}, ${zip || ""}, ${JSON.stringify(items)}, ${total})
+      RETURNING *
+    `;
+    res.status(201).json(order[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET all orders
+app.get("/api/orders", async (req, res) => {
+  try {
+    const orders = await sql`SELECT * FROM orders ORDER BY created_at DESC`;
+    res.json(orders);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
