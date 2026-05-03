@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>My Account</title>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial;
+  background:#f4f6f8;
+}
+
+/* TOP BAR */
+.topbar{
+  background:#1e1e2f;
+  color:white;
+  padding:15px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.topbar button{
+  background:#f85606;
+  border:none;
+  color:white;
+  padding:8px 12px;
+  border-radius:5px;
+  cursor:pointer;
+}
+
+/* MAIN LAYOUT */
+.container{
+  display:flex;
+}
+
+/* SIDEBAR */
+.sidebar{
+  width:240px;
+  background:white;
+  height:100vh;
+  padding:20px;
+  border-right:1px solid #ddd;
+}
+
+.sidebar h3{
+  margin-bottom:15px;
+}
+
+.menu{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.menu p{
+  padding:10px;
+  cursor:pointer;
+  border-radius:6px;
+}
+
+.menu p:hover{
+  background:#f1f1f1;
+}
+
+/* CONTENT */
+.content{
+  flex:1;
+  padding:25px;
+}
+
+/* PROFILE CARD */
+.card{
+  background:white;
+  padding:20px;
+  border-radius:10px;
+  margin-bottom:15px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.05);
+}
+
+.label{
+  color:gray;
+  font-size:13px;
+  margin-bottom:5px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div>👤 My Account</div>
+  <button onclick="goHome()">🏠 Home</button>
+</div>
+
+<div class="container">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+
+    <h3>My Section</h3>
+
+    <div class="menu">
+      <p onclick="showProfile()">👤 Profile</p>
+      <p onclick="go('order')">🛒 My Orders</p>
+   
+    </div>
+
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- PROFILE INFO -->
+    <div class="card">
+      <div class="label">Customer Name</div>
+      <h2 id="name">Loading...</h2>
+    </div>
+
+    <div class="card">
+      <div class="label">Email / Phone</div>
+      <h3 id="email">Loading...</h3>
+    </div>
+
+    <div class="card">
+      <div class="label">Account Status</div>
+      <h3 style="color:green;">Active</h3>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+
+// 🔥 GET USER (FROM LOGIN)
+let user = localStorage.getItem("user") || "Guest User";
+
+// show dynamic data
+document.getElementById("name").innerText = user;
+document.getElementById("email").innerText = user;
+
+// NAVIGATION
+function go(page){
+  window.location.href = page + ".html";
+}
+
+// HOME
+function goHome(){
+  window.location.href = "index.html";
+}
+
+// PROFILE (future expand option)
+function showProfile(){
+  alert("Profile section");
+}
+
+</script>
+
+</body>
+</html>
