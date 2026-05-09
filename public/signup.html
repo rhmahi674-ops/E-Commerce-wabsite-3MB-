@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign Up — NeonStore</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          colors: {
+            primary: { 50:'#eef2ff',100:'#e0e7ff',200:'#c7d2fe',300:'#a5b4fc',400:'#818cf8',500:'#6366f1',600:'#4f46e5',700:'#4338ca',800:'#3730a3',900:'#312e81' }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="min-h-screen bg-white flex items-center justify-center p-4" style="font-family:'Inter',sans-serif;">
+
+  <div class="w-full max-w-md">
+    <!-- Logo -->
+    <div class="text-center mb-10">
+      <a href="/" class="inline-flex items-center gap-2">
+        <i class="fa-solid fa-store text-primary-600 text-2xl"></i>
+        <span class="text-2xl font-black text-gray-900 tracking-tight">Neon<span class="text-primary-600">Store</span></span>
+      </a>
+    </div>
+
+    <!-- Heading -->
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-black text-gray-900 mb-2">Create your account</h1>
+      <p class="text-gray-400 text-sm">Join NeonStore and start shopping today</p>
+    </div>
+
+    <!-- Form -->
+    <form id="signupForm" class="space-y-5">
+      <div>
+        <label class="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">Full Name</label>
+        <input type="text" id="name" required placeholder="John Doe"
+          class="w-full border-2 border-gray-200 rounded-xl px-4 py-3.5 text-sm font-medium focus:outline-none focus:border-primary-500 transition-colors" />
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">Email Address</label>
+        <input type="email" id="email" required placeholder="you@example.com"
+          class="w-full border-2 border-gray-200 rounded-xl px-4 py-3.5 text-sm font-medium focus:outline-none focus:border-primary-500 transition-colors" />
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">Password</label>
+        <div class="relative">
+          <input type="password" id="password" required placeholder="Min 6 characters" minlength="6"
+            class="w-full border-2 border-gray-200 rounded-xl px-4 py-3.5 text-sm font-medium focus:outline-none focus:border-primary-500 transition-colors pr-12" />
+          <button type="button" onclick="togglePassword()" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+            <i id="eyeIcon" class="fa-solid fa-eye text-sm"></i>
+          </button>
+        </div>
+        <p class="text-xs text-gray-400 mt-1.5">Must be at least 6 characters</p>
+      </div>
+
+      <!-- Error -->
+      <div id="error" class="text-red-500 text-sm font-medium hidden bg-red-50 border border-red-200 rounded-lg px-4 py-3"></div>
+
+      <button type="submit" id="submitBtn"
+        class="w-full bg-primary-600 text-white py-3.5 rounded-xl font-bold text-sm hover:bg-primary-700 transition-colors active:scale-[0.98]">
+        Create Account
+      </button>
+    </form>
+
+    <!-- Divider -->
+    <div class="flex items-center gap-4 my-8">
+      <div class="flex-1 h-px bg-gray-200"></div>
+      <span class="text-xs text-gray-400 font-medium">ALREADY HAVE AN ACCOUNT?</span>
+      <div class="flex-1 h-px bg-gray-200"></div>
+    </div>
+
+    <!-- Sign In Link -->
+    <a href="/login.html"
+      class="block w-full text-center border-2 border-gray-200 text-gray-700 py-3.5 rounded-xl font-bold text-sm hover:border-primary-300 hover:text-primary-600 transition-colors">
+      Sign In Instead
+    </a>
+
+    <!-- Back to store -->
+    <p class="text-center text-xs text-gray-400 mt-6">
+      <a href="/" class="hover:text-primary-600 transition-colors"><i class="fa-solid fa-arrow-left mr-1"></i> Back to store</a>
+    </p>
+  </div>
+
+  <script>
+    if (localStorage.getItem("token")) {
+      window.location.href = "/";
+    }
+
+    function togglePassword() {
+      const inp = document.getElementById("password");
+      const icon = document.getElementById("eyeIcon");
+      if (inp.type === "password") { inp.type = "text"; icon.className = "fa-solid fa-eye-slash text-sm"; }
+      else { inp.type = "password"; icon.className = "fa-solid fa-eye text-sm"; }
+    }
+
+    document.getElementById("signupForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const errEl = document.getElementById("error");
+      const btn = document.getElementById("submitBtn");
+      errEl.classList.add("hidden");
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Creating account...';
+
+      try {
+        const res = await fetch("/api/auth/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: document.getElementById("name").value,
+            email: document.getElementById("email").value,
+            password: document.getElementById("password").value,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
+
+        const redirect = new URLSearchParams(window.location.search).get("redirect");
+        if (redirect) window.location.href = redirect;
+        else window.location.href = "/";
+      } catch (err) {
+        errEl.textContent = err.message;
+        errEl.classList.remove("hidden");
+        btn.disabled = false;
+        btn.textContent = "Create Account";
+      }
+    });
+  </script>
+</body>
+</html>

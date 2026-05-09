@@ -1,4 +1,5 @@
 const { neon } = require("@neondatabase/serverless");
+const bcrypt = require("bcryptjs");
 require("dotenv").config();
 
 const sql = neon(process.env.DATABASE_URL);
@@ -103,6 +104,19 @@ const products = [
 ];
 
 async function seed() {
+  console.log("Creating tables...");
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      email VARCHAR(255) UNIQUE NOT NULL,
+      password_hash VARCHAR(255) NOT NULL,
+      role VARCHAR(20) DEFAULT 'user',
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `;
+
   console.log("Creating products table...");
   await sql`
     CREATE TABLE IF NOT EXISTS products (
@@ -116,6 +130,38 @@ async function seed() {
       created_at TIMESTAMP DEFAULT NOW()
     )
   `;
+
+  // Drop and recreate orders table to ensure correct schema
+  console.log("Recreating orders table...");
+  await sql`DROP TABLE IF EXISTS orders`;
+  await sql`
+    CREATE TABLE orders (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id),
+      tracking_number VARCHAR(20) UNIQUE,
+      full_name VARCHAR(255) NOT NULL,
+      email VARCHAR(255) NOT NULL,
+      phone VARCHAR(50),
+      address TEXT NOT NULL,
+      city VARCHAR(100),
+      zip VARCHAR(20),
+      items JSONB NOT NULL,
+      total DECIMAL(10,2) NOT NULL,
+      status VARCHAR(50) DEFAULT 'Processing',
+      created_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP DEFAULT NOW()
+    )
+  `;
+
+  // Seed admin user
+  console.log("Seeding admin user...");
+  const adminHash = await bcrypt.hash("admin123", 10);
+  await sql`DELETE FROM users WHERE email = 'admin@neonstore.com'`;
+  await sql`
+    INSERT INTO users (name, email, password_hash, role)
+    VALUES ('Admin', 'admin@neonstore.com', ${adminHash}, 'admin')
+  `;
+  console.log("Admin user created: admin@neonstore.com / admin123");
 
   console.log("Clearing existing products...");
   await sql`DELETE FROM products`;

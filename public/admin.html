@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard — NeonStore</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          colors: {
+            primary: { 50:'#eef2ff',100:'#e0e7ff',200:'#c7d2fe',300:'#a5b4fc',400:'#818cf8',500:'#6366f1',600:'#4f46e5',700:'#4338ca',800:'#3730a3',900:'#312e81' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .sidebar-btn.active { background: rgba(99,102,241,0.15); color: #818cf8; }
+  </style>
+</head>
+<body class="min-h-screen bg-white text-gray-900">
+
+  <!-- Mobile Header -->
+  <div class="lg:hidden flex items-center justify-between p-4 border-b border-gray-200">
+    <button onclick="toggleSidebar()" class="p-2 rounded-lg hover:bg-gray-100"><i class="fa-solid fa-bars text-lg"></i></button>
+    <span class="font-black text-lg">Neon<span class="text-primary-600">Store</span></span>
+    <a href="/" class="p-2 rounded-lg hover:bg-gray-100"><i class="fa-solid fa-store text-lg"></i></a>
+  </div>
+
+  <!-- Sidebar Overlay -->
+  <div id="sidebarOverlay" class="fixed inset-0 bg-black/40 z-40 hidden lg:hidden" onclick="toggleSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-gray-950 text-white z-50 -translate-x-full lg:translate-x-0 transition-transform duration-300 flex flex-col">
+    <div class="p-6 border-b border-gray-800">
+      <a href="/" class="flex items-center gap-2">
+        <i class="fa-solid fa-store text-primary-400 text-lg"></i>
+        <span class="font-black text-lg tracking-tight">NeonStore</span>
+      </a>
+      <p class="text-gray-600 text-xs mt-1 font-medium">Admin Dashboard</p>
+    </div>
+    <nav class="p-4 space-y-1 flex-1">
+      <button onclick="showTab('dashboard')" id="tab-dashboard" class="sidebar-btn active w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 transition-colors">
+        <i class="fa-solid fa-chart-line w-5 text-center"></i> Dashboard
+      </button>
+      <button onclick="showTab('products')" id="tab-products" class="sidebar-btn w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 text-gray-500 hover:text-gray-300 transition-colors">
+        <i class="fa-solid fa-tags w-5 text-center"></i> Products
+      </button>
+      <button onclick="showTab('orders')" id="tab-orders" class="sidebar-btn w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 text-gray-500 hover:text-gray-300 transition-colors">
+        <i class="fa-solid fa-truck w-5 text-center"></i> Orders
+      </button>
+    </nav>
+    <div class="p-4 border-t border-gray-800">
+      <div class="flex items-center gap-3 mb-3 px-2">
+        <div class="w-9 h-9 rounded-full bg-primary-600 flex items-center justify-center text-sm font-black" id="adminAvatar">A</div>
+        <div class="min-w-0">
+          <p class="text-sm font-bold truncate" id="adminName">Admin</p>
+          <p class="text-xs text-gray-600 truncate" id="adminEmail">admin@neonstore.com</p>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <a href="/" class="flex-1 text-center px-3 py-2 rounded-lg text-xs font-semibold text-gray-500 hover:text-white hover:bg-gray-800 transition-colors">
+          <i class="fa-solid fa-store mr-1"></i> Store
+        </a>
+        <button onclick="logout()" class="flex-1 px-3 py-2 rounded-lg text-xs font-semibold text-gray-500 hover:text-red-400 hover:bg-gray-800 transition-colors">
+          <i class="fa-solid fa-right-from-bracket mr-1"></i> Logout
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="lg:ml-64 min-h-screen">
+
+    <!-- ========== DASHBOARD VIEW ========== -->
+    <div id="view-dashboard" class="p-6 lg:p-8">
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <h1 class="text-2xl font-black">Dashboard</h1>
+          <p class="text-sm text-gray-400 mt-1">Welcome back, <span id="welcomeName">Admin</span></p>
+        </div>
+        <span class="text-xs text-gray-400 font-medium" id="todayDate"></span>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+        <div class="border-2 border-gray-100 rounded-2xl p-5 hover:border-primary-200 transition-colors">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Revenue</span>
+            <div class="w-9 h-9 rounded-xl bg-green-50 flex items-center justify-center"><i class="fa-solid fa-dollar-sign text-green-600 text-sm"></i></div>
+          </div>
+          <p class="text-2xl font-black" id="statRevenue">$0</p>
+        </div>
+        <div class="border-2 border-gray-100 rounded-2xl p-5 hover:border-primary-200 transition-colors">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Orders</span>
+            <div class="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center"><i class="fa-solid fa-receipt text-blue-600 text-sm"></i></div>
+          </div>
+          <p class="text-2xl font-black" id="statOrders">0</p>
+        </div>
+        <div class="border-2 border-gray-100 rounded-2xl p-5 hover:border-primary-200 transition-colors">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Products</span>
+            <div class="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center"><i class="fa-solid fa-box text-purple-600 text-sm"></i></div>
+          </div>
+          <p class="text-2xl font-black" id="statProducts">0</p>
+        </div>
+        <div class="border-2 border-gray-100 rounded-2xl p-5 hover:border-primary-200 transition-colors">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Customers</span>
+            <div class="w-9 h-9 rounded-xl bg-orange-50 flex items-center justify-center"><i class="fa-solid fa-users text-orange-600 text-sm"></i></div>
+          </div>
+          <p class="text-2xl font-black" id="statUsers">0</p>
+        </div>
+      </div>
+
+      <!-- Status Breakdown -->
+      <div class="mb-10">
+        <h2 class="text-lg font-black mb-4">Order Status Breakdown</h2>
+        <div id="statusBreakdown" class="flex flex-wrap gap-3"></div>
+      </div>
+
+      <!-- Recent Orders -->
+      <div>
+        <h2 class="text-lg font-black mb-4">Recent Orders</h2>
+        <div class="border-2 border-gray-100 rounded-2xl overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b-2 border-gray-100">
+                  <th class="text-left px-5 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Order</th>
+                  <th class="text-left px-5 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Customer</th>
+                  <th class="text-left px-5 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Total</th>
+                  <th class="text-left px-5 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Status</th>
+                  <th class="text-left px-5 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Date</th>
+                </tr>
+              </thead>
+              <tbody id="recentOrdersBody"></tbody>
+            </table>
+          </div>
+          <div id="recentEmpty" class="text-center py-12 hidden">
+            <i class="fa-solid fa-receipt text-gray-200 text-4xl mb-3"></i>
+            <p class="text-gray-400 text-sm font-medium">No orders yet</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== PRODUCTS VIEW ========== -->
+    <div id="view-products" class="p-6 lg:p-8 hidden">
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <h1 class="text-2xl font-black">Products</h1>
+          <p class="text-sm text-gray-400 mt-1">Manage your product catalog</p>
+        </div>
+        <button onclick="openProductModal()" class="bg-primary-600 text-white px-5 py-3 rounded-xl font-bold text-sm hover:bg-primary-700 transition-colors active:scale-[0.98]">
+          <i class="fa-solid fa-plus mr-2"></i>Add Product
+        </button>
+      </div>
+
+      <!-- Products Table -->
+      <div class="border-2 border-gray-100 rounded-2xl overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b-2 border-gray-100">
+                <th class="text-left px-5 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Product</th>
+                <th class="text-left px-5 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Category</th>
+                <th class="text-left px-5 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Price</th>
+                <th class="text-left px-5 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Stock</th>
+                <th class="text-right px-5 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="productsBody"></tbody>
+          </table>
+        </div>
+        <div id="productsEmpty" class="text-center py-12 hidden">
+          <i class="fa-solid fa-box-open text-gray-200 text-4xl mb-3"></i>
+          <p class="text-gray-400 text-sm font-medium">No products yet</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== ORDERS VIEW ========== -->
+    <div id="view-orders" class="p-6 lg:p-8 hidden">
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <h1 class="text-2xl font-black">Orders</h1>
+          <p class="text-sm text-gray-400 mt-1">Manage and track all orders</p>
+        </div>
+        <select id="orderFilter" onchange="filterOrders()" class="border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm font-semibold focus:outline-none focus:border-primary-500">
+          <option value="all">All Orders</option>
+          <option value="Processing">Processing</option>
+          <option value="Confirmed">Confirmed</option>
+          <option value="Shipped">Shipped</option>
+          <option value="Out for Delivery">Out for Delivery</option>
+          <option value="Delivered">Delivered</option>
+          <option value="Cancelled">Cancelled</option>
+        </select>
+      </div>
+
+      <!-- Orders Table -->
+      <div class="border-2 border-gray-100 rounded-2xl overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b-2 border-gray-100">
+                <th class="text-left px-5 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Tracking #</th>
+                <th class="text-left px-5 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Customer</th>
+                <th class="text-left px-5 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Items</th>
+                <th class="text-left px-5 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Total</th>
+                <th class="text-left px-5 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Status</th>
+                <th class="text-left px-5 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Date</th>
+                <th class="text-right px-5 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="ordersBody"></tbody>
+          </table>
+        </div>
+        <div id="ordersEmpty" class="text-center py-12 hidden">
+          <i class="fa-solid fa-truck text-gray-200 text-4xl mb-3"></i>
+          <p class="text-gray-400 text-sm font-medium">No orders found</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ========== PRODUCT MODAL ========== -->
+  <div id="productModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden" onclick="closeProductModal()">
+    <div class="bg-white rounded-2xl p-6 sm:p-8 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between mb-6">
+        <h2 id="productModalTitle" class="text-xl font-black">Add Product</h2>
+        <button onclick="closeProductModal()" class="p-2 rounded-lg hover:bg-gray-100"><i class="fa-solid fa-xmark text-gray-500"></i></button>
+      </div>
+      <form id="productForm" class="space-y-4">
+        <input type="hidden" id="productId" />
+        <div>
+          <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Product Name *</label>
+          <input type="text" id="pName" required placeholder="e.g. Wireless Headphones" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary-500 transition-colors" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Description</label>
+          <textarea id="pDesc" rows="2" placeholder="Brief description" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary-500 transition-colors resize-none"></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Price ($) *</label>
+            <input type="number" id="pPrice" step="0.01" required placeholder="49.99" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary-500 transition-colors" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Stock</label>
+            <input type="number" id="pStock" value="0" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary-500 transition-colors" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Category</label>
+          <select id="pCategory" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary-500 transition-colors">
+            <option value="">Select category</option>
+            <option value="Electronics">Electronics</option>
+            <option value="Clothing">Clothing</option>
+            <option value="Accessories">Accessories</option>
+            <option value="Home">Home</option>
+            <option value="Footwear">Footwear</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Image URL</label>
+          <input type="url" id="pImage" placeholder="https://..." class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary-500 transition-colors" />
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button type="submit" class="flex-1 bg-primary-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-primary-700 transition-colors">Save Product</button>
+          <button type="button" onclick="closeProductModal()" class="flex-1 border-2 border-gray-200 text-gray-600 py-3 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========== ORDER DETAIL MODAL ========== -->
+  <div id="orderModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden" onclick="closeOrderModal()">
+    <div class="bg-white rounded-2xl p-6 sm:p-8 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-black">Order Details</h2>
+        <button onclick="closeOrderModal()" class="p-2 rounded-lg hover:bg-gray-100"><i class="fa-solid fa-xmark text-gray-500"></i></button>
+      </div>
+      <div id="orderDetailContent"></div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] hidden">
+    <div class="bg-gray-900 text-white px-5 py-3 rounded-xl text-sm font-semibold flex items-center gap-2">
+      <span id="toastIcon"></span>
+      <span id="toastMsg">Done</span>
+    </div>
+  </div>
+
+  <script>
+    // ========================
+    // AUTH GUARD
+    // ========================
+    const token = localStorage.getItem("token");
+    const user = JSON.parse(localStorage.getItem("user") || "null");
+    if (!token || !user || user.role !== "admin") {
+      window.location.href = "/login.html";
+    }
+
+    const headers = { "Authorization": "Bearer " + token, "Content-Type": "application/json" };
+
+    // Set admin info
+    document.getElementById("adminName").textContent = user?.name || "Admin";
+    document.getElementById("adminEmail").textContent = user?.email || "";
+    document.getElementById("adminAvatar").textContent = (user?.name || "A").charAt(0).toUpperCase();
+    document.getElementById("welcomeName").textContent = user?.name || "Admin";
+    document.getElementById("todayDate").textContent = new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+
+    let allProducts = [];
+    let allOrders = [];
+
+    // ========================
+    // SIDEBAR & TABS
+    // ========================
+    function toggleSidebar() {
+      const s = document.getElementById("sidebar");
+      const o = document.getElementById("sidebarOverlay");
+      s.classList.toggle("-translate-x-full");
+      o.classList.toggle("hidden");
+    }
+
+    function showTab(tab) {
+      ["dashboard", "products", "orders"].forEach(t => {
+        document.getElementById("view-" + t).classList.toggle("hidden", t !== tab);
+        const btn = document.getElementById("tab-" + t);
+        if (t === tab) { btn.className = "sidebar-btn active w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 transition-colors"; }
+        else { btn.className = "sidebar-btn w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 text-gray-500 hover:text-gray-300 transition-colors"; }
+      });
+      // Close mobile sidebar
+      if (window.innerWidth < 1024) {
+        document.getElementById("sidebar").classList.add("-translate-x-full");
+        document.getElementById("sidebarOverlay").classList.add("hidden");
+      }
+    }
+
+    // ========================
+    // HELPERS
+    // ========================
+    function esc(str) { const d = document.createElement("div"); d.textContent = str || ""; return d.innerHTML; }
+
+    function statusBadge(status) {
+      const colors = {
+        "Processing": "bg-yellow-50 text-yellow-700 border-yellow-200",
+        "Confirmed": "bg-blue-50 text-blue-700 border-blue-200",
+        "Shipped": "bg-purple-50 text-purple-700 border-purple-200",
+        "Out for Delivery": "bg-orange-50 text-orange-700 border-orange-200",
+        "Delivered": "bg-green-50 text-green-700 border-green-200",
+        "Cancelled": "bg-red-50 text-red-700 border-red-200",
+      };
+      return `<span class="inline-block px-2.5 py-1 rounded-lg text-xs font-bold border ${colors[status] || 'bg-gray-50 text-gray-600 border-gray-200'}">${esc(status)}</span>`;
+    }
+
+    function formatDate(d) {
+      return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    }
+
+    function showToast(icon, msg) {
+      const t = document.getElementById("toast");
+      document.getElementById("toastIcon").innerHTML = icon;
+      document.getElementById("toastMsg").textContent = msg;
+      t.classList.remove("hidden");
+      clearTimeout(window._t);
+      window._t = setTimeout(() => t.classList.add("hidden"), 2500);
+    }
+
+    function logout() {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      window.location.href = "/login.html";
+    }
+
+    // ========================
+    // DASHBOARD: STATS
+    // ========================
+    async function loadStats() {
+      try {
+        const res = await fetch("/api/admin/stats", { headers });
+        if (res.status === 401 || res.status === 403) { logout(); return; }
+        const data = await res.json();
+
+        document.getElementById("statRevenue").textContent = "$" + data.total_revenue.toLocaleString("en-US", { minimumFractionDigits: 2 });
+        document.getElementById("statOrders").textContent = data.total_orders;
+        document.getElementById("statProducts").textContent = data.total_products;
+        document.getElementById("statUsers").textContent = data.total_users;
+
+        // Status breakdown
+        const sb = document.getElementById("statusBreakdown");
+        if (data.status_counts && data.status_counts.length > 0) {
+          sb.innerHTML = data.status_counts.map(s =>
+            `<div class="border-2 border-gray-100 rounded-xl px-4 py-3 flex items-center gap-3">
+              ${statusBadge(s.status)}
+              <span class="text-lg font-black">${s.count}</span>
+            </div>`
+          ).join("");
+        } else {
+          sb.innerHTML = '<p class="text-gray-400 text-sm">No orders yet</p>';
+        }
+
+        // Recent orders
+        const tbody = document.getElementById("recentOrdersBody");
+        const empty = document.getElementById("recentEmpty");
+        if (data.recent_orders.length === 0) {
+          tbody.innerHTML = "";
+          empty.classList.remove("hidden");
+        } else {
+          empty.classList.add("hidden");
+          tbody.innerHTML = data.recent_orders.map(o => `
+            <tr class="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+              <td class="px-5 py-4 font-bold text-primary-600">#${o.id}</td>
+              <td class="px-5 py-4 font-medium">${esc(o.full_name)}</td>
+              <td class="px-5 py-4 font-bold">$${parseFloat(o.total).toFixed(2)}</td>
+              <td class="px-5 py-4">${statusBadge(o.status)}</td>
+              <td class="px-5 py-4 text-gray-400">${formatDate(o.created_at)}</td>
+            </tr>
+          `).join("");
+        }
+      } catch (err) {
+        console.error("Failed to load stats:", err);
+      }
+    }
+
+    // ========================
+    // PRODUCTS CRUD
+    // ========================
+    async function loadProducts() {
+      try {
+        const res = await fetch("/api/products", { headers });
+        allProducts = await res.json();
+        renderProductsTable();
+      } catch (err) { console.error(err); }
+    }
+
+    function renderProductsTable() {
+      const tbody = document.getElementById("productsBody");
+      const empty = document.getElementById("productsEmpty");
+      if (allProducts.length === 0) { tbody.innerHTML = ""; empty.classList.remove("hidden"); return; }
+      empty.classList.add("hidden");
+      tbody.innerHTML = allProducts.map(p => `
+        <tr class="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+          <td class="px-5 py-4">
+            <div class="flex items-center gap-3">
+              <img src="${esc(p.image) || 'https://placehold.co/48x48/f1f5f9/94a3b8?text=...'}" class="w-10 h-10 rounded-lg object-cover" />
+              <div>
+                <p class="font-bold text-sm">${esc(p.name)}</p>
+                <p class="text-xs text-gray-400 truncate max-w-[200px]">${esc(p.description)}</p>
+              </div>
+            </div>
+          </td>
+          <td class="px-5 py-4"><span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-gray-100 text-gray-600">${esc(p.category) || 'N/A'}</span></td>
+          <td class="px-5 py-4 font-bold">$${parseFloat(p.price).toFixed(2)}</td>
+          <td class="px-5 py-4">
+            <span class="font-bold ${p.stock <= 5 ? 'text-red-500' : p.stock <= 20 ? 'text-orange-500' : 'text-green-600'}">${p.stock}</span>
+          </td>
+          <td class="px-5 py-4 text-right">
+            <button onclick="editProduct(${p.id})" class="px-3 py-1.5 rounded-lg text-xs font-bold text-primary-600 hover:bg-primary-50 transition-colors mr-1">
+              <i class="fa-solid fa-pen mr-1"></i>Edit
+            </button>
+            <button onclick="deleteProduct(${p.id})" class="px-3 py-1.5 rounded-lg text-xs font-bold text-red-500 hover:bg-red-50 transition-colors">
+              <i class="fa-solid fa-trash mr-1"></i>Delete
+            </button>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function openProductModal(product = null) {
+      document.getElementById("productModal").classList.remove("hidden");
+      document.getElementById("productModalTitle").textContent = product ? "Edit Product" : "Add Product";
+      if (product) {
+        document.getElementById("productId").value = product.id;
+        document.getElementById("pName").value = product.name;
+        document.getElementById("pDesc").value = product.description || "";
+        document.getElementById("pPrice").value = product.price;
+        document.getElementById("pStock").value = product.stock;
+        document.getElementById("pCategory").value = product.category || "";
+        document.getElementById("pImage").value = product.image || "";
+      } else {
+        document.getElementById("productForm").reset();
+        document.getElementById("productId").value = "";
+      }
+    }
+
+    function closeProductModal() { document.getElementById("productModal").classList.add("hidden"); }
+
+    async function editProduct(id) {
+      const p = allProducts.find(x => x.id === id);
+      if (p) openProductModal(p);
+    }
+
+    async function deleteProduct(id) {
+      if (!confirm("Delete this product?")) return;
+      try {
+        await fetch("/api/products/" + id, { method: "DELETE", headers });
+        showToast("<i class='fa-solid fa-trash'></i>", "Product deleted");
+        loadProducts();
+        loadStats();
+      } catch (err) { console.error(err); }
+    }
+
+    document.getElementById("productForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const id = document.getElementById("productId").value;
+      const data = {
+        name: document.getElementById("pName").value,
+        description: document.getElementById("pDesc").value,
+        price: parseFloat(document.getElementById("pPrice").value),
+        stock: parseInt(document.getElementById("pStock").value) || 0,
+        category: document.getElementById("pCategory").value,
+        image: document.getElementById("pImage").value,
+      };
+      try {
+        if (id) {
+          await fetch("/api/products/" + id, { method: "PUT", headers, body: JSON.stringify(data) });
+          showToast("<i class='fa-solid fa-check'></i>", "Product updated");
+        } else {
+          await fetch("/api/products", { method: "POST", headers, body: JSON.stringify(data) });
+          showToast("<i class='fa-solid fa-check'></i>", "Product added");
+        }
+        closeProductModal();
+        loadProducts();
+        loadStats();
+      } catch (err) { console.error(err); }
+    });
+
+    // ========================
+    // ORDERS MANAGEMENT
+    // ========================
+    async function loadOrders() {
+      try {
+        const res = await fetch("/api/orders", { headers });
+        allOrders = await res.json();
+        renderOrdersTable();
+      } catch (err) { console.error(err); }
+    }
+
+    function filterOrders() {
+      renderOrdersTable();
+    }
+
+    function renderOrdersTable() {
+      const filter = document.getElementById("orderFilter").value;
+      const filtered = filter === "all" ? allOrders : allOrders.filter(o => o.status === filter);
+      const tbody = document.getElementById("ordersBody");
+      const empty = document.getElementById("ordersEmpty");
+
+      if (filtered.length === 0) { tbody.innerHTML = ""; empty.classList.remove("hidden"); return; }
+      empty.classList.add("hidden");
+
+      tbody.innerHTML = filtered.map(o => {
+        const items = typeof o.items === "string" ? JSON.parse(o.items) : o.items;
+        return `
+          <tr class="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+            <td class="px-5 py-4 font-bold text-primary-600 text-xs">${esc(o.tracking_number || 'N/A')}</td>
+            <td class="px-5 py-4">
+              <p class="font-bold text-sm">${esc(o.full_name)}</p>
+              <p class="text-xs text-gray-400">${esc(o.email)}</p>
+            </td>
+            <td class="px-5 py-4 text-xs text-gray-500">${items.length} item${items.length !== 1 ? 's' : ''}</td>
+            <td class="px-5 py-4 font-bold">$${parseFloat(o.total).toFixed(2)}</td>
+            <td class="px-5 py-4">
+              <div class="flex items-center gap-2 flex-wrap">
+                ${statusBadge(o.status)}
+                ${getStatusActions(o.id, o.status)}
+              </div>
+            </td>
+            <td class="px-5 py-4 text-gray-400 text-xs">${formatDate(o.created_at)}</td>
+            <td class="px-5 py-4 text-right">
+              <button onclick="viewOrderDetail(${o.id})" class="px-3 py-1.5 rounded-lg text-xs font-bold text-primary-600 hover:bg-primary-50 transition-colors">
+                <i class="fa-solid fa-eye mr-1"></i>View
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function getStatusActions(id, status) {
+      const nextMap = {
+        "Processing": [
+          { label: "Confirm", value: "Confirmed", icon: "fa-circle-check", cls: "text-blue-600 border-blue-200 hover:bg-blue-50" },
+          { label: "Cancel", value: "Cancelled", icon: "fa-circle-xmark", cls: "text-red-500 border-red-200 hover:bg-red-50" },
+        ],
+        "Confirmed": [
+          { label: "Ship", value: "Shipped", icon: "fa-truck", cls: "text-purple-600 border-purple-200 hover:bg-purple-50" },
+          { label: "Cancel", value: "Cancelled", icon: "fa-circle-xmark", cls: "text-red-500 border-red-200 hover:bg-red-50" },
+        ],
+        "Shipped": [
+          { label: "Out for Delivery", value: "Out for Delivery", icon: "fa-truck-fast", cls: "text-orange-600 border-orange-200 hover:bg-orange-50" },
+        ],
+        "Out for Delivery": [
+          { label: "Delivered", value: "Delivered", icon: "fa-box-open", cls: "text-green-600 border-green-200 hover:bg-green-50" },
+        ],
+        "Delivered": [],
+        "Cancelled": [],
+      };
+      const actions = nextMap[status] || [];
+      if (actions.length === 0) return '';
+      return actions.map(a =>
+        `<button onclick="updateOrderStatus(${id}, '${a.value}')" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold border-2 ${a.cls} transition-colors active:scale-95">
+          <i class="fa-solid ${a.icon}"></i>${a.label}
+        </button>`
+      ).join("");
+    }
+
+    async function updateOrderStatus(id, status) {
+      try {
+        await fetch("/api/orders/" + id + "/status", {
+          method: "PUT", headers,
+          body: JSON.stringify({ status }),
+        });
+        showToast("<i class='fa-solid fa-check'></i>", "Status updated to " + status);
+        const order = allOrders.find(o => o.id === id);
+        if (order) order.status = status;
+        renderOrdersTable();
+        loadStats();
+      } catch (err) { console.error(err); }
+    }
+
+    async function viewOrderDetail(id) {
+      try {
+        const res = await fetch("/api/orders/" + id, { headers });
+        const order = await res.json();
+        const items = typeof order.items === "string" ? JSON.parse(order.items) : order.items;
+
+        document.getElementById("orderDetailContent").innerHTML = `
+          <div class="space-y-5">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Tracking Number</p>
+                <p class="text-lg font-black text-primary-600">${esc(order.tracking_number || 'N/A')}</p>
+              </div>
+              ${statusBadge(order.status)}
+            </div>
+
+            <div class="border-2 border-gray-100 rounded-xl p-4">
+              <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Customer Info</p>
+              <div class="grid grid-cols-2 gap-3 text-sm">
+                <div><span class="text-gray-400">Name:</span> <span class="font-bold">${esc(order.full_name)}</span></div>
+                <div><span class="text-gray-400">Email:</span> <span class="font-bold">${esc(order.email)}</span></div>
+                <div><span class="text-gray-400">Phone:</span> <span class="font-bold">${esc(order.phone) || 'N/A'}</span></div>
+                <div><span class="text-gray-400">City:</span> <span class="font-bold">${esc(order.city) || 'N/A'}</span></div>
+                <div class="col-span-2"><span class="text-gray-400">Address:</span> <span class="font-bold">${esc(order.address)}</span></div>
+              </div>
+            </div>
+
+            <div class="border-2 border-gray-100 rounded-xl p-4">
+              <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Items</p>
+              <div class="space-y-2">
+                ${items.map(i => `
+                  <div class="flex items-center justify-between text-sm">
+                    <div class="flex items-center gap-2">
+                      <img src="${esc(i.image) || 'https://placehold.co/32x32/f1f5f9/94a3b8?text=...'}" class="w-8 h-8 rounded-lg object-cover" />
+                      <span class="font-medium">${esc(i.name)} <span class="text-gray-400">x${i.qty}</span></span>
+                    </div>
+                    <span class="font-bold">$${(i.price * i.qty).toFixed(2)}</span>
+                  </div>
+                `).join("")}
+              </div>
+              <div class="border-t-2 border-gray-100 mt-3 pt-3 flex justify-between font-black text-base">
+                <span>Total</span>
+                <span>$${parseFloat(order.total).toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div class="text-xs text-gray-400">
+              <p>Order placed: ${new Date(order.created_at).toLocaleString()}</p>
+              <p>Last updated: ${new Date(order.updated_at).toLocaleString()}</p>
+            </div>
+          </div>
+        `;
+        document.getElementById("orderModal").classList.remove("hidden");
+      } catch (err) { console.error(err); }
+    }
+
+    function closeOrderModal() { document.getElementById("orderModal").classList.add("hidden"); }
+
+    // ========================
+    // INIT
+    // ========================
+    loadStats();
+    loadProducts();
+    loadOrders();
+  </script>
+</body>
+</html>
