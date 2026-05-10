@@ -279,7 +279,7 @@
         <div id="checkoutError" class="text-red-500 text-sm font-medium hidden bg-red-50 border border-red-200 rounded-lg px-4 py-3"></div>
         <div class="flex gap-3 pt-3">
           <button type="submit" id="placeOrderBtn" class="flex-1 bg-primary-600 text-white py-3.5 rounded-xl font-bold text-sm hover:bg-primary-700 transition-colors active:scale-[0.98]">
-            <i class="fa-solid fa-lock mr-2 text-xs"></i>Place Order
+            <i class="fa-solid fa-credit-card mr-2 text-xs"></i>Pay with aamarPay
           </button>
           <button type="button" onclick="closeCheckout()" class="flex-1 border-2 border-gray-200 text-gray-600 py-3.5 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors">Cancel</button>
         </div>
@@ -515,7 +515,7 @@
       }
 
       btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Placing order...';
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Redirecting to payment...';
 
       const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
       const orderData = {
@@ -530,27 +530,23 @@
       };
 
       try {
-        const res = await fetch("/api/orders", {
+        const res = await fetch("/api/payment/initiate", {
           method: "POST",
           headers: authHeaders(),
           body: JSON.stringify(orderData),
         });
+        const data = await res.json();
         if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.error || "Failed to place order");
+          throw new Error(data.error || "Failed to initiate payment");
         }
-        cart = [];
-        saveCart();
-        renderCart();
-        closeCheckout();
-        document.getElementById("checkoutForm").reset();
-        showToast("<i class='fa-solid fa-circle-check'></i>", "Order placed successfully!");
+        // Redirect to AmarPay payment page
+        window.location.href = data.payment_url;
       } catch (err) {
         errEl.textContent = err.message;
         errEl.classList.remove("hidden");
       } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-lock mr-2 text-xs"></i>Place Order';
+        btn.innerHTML = '<i class="fa-solid fa-credit-card mr-2 text-xs"></i>Pay with aamarPay';
       }
     });
 

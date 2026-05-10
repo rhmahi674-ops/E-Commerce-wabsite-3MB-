@@ -13,7 +13,14 @@ const JWT_SECRET = process.env.JWT_SECRET || "neonstore_jwt_secret_2026";
 
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "public")));
+
+// AmarPay config
+const AAMARPAY_STORE_ID = process.env.AAMARPAY_STORE_ID || "aamarpaytest";
+const AAMARPAY_SIGNATURE_KEY = process.env.AAMARPAY_SIGNATURE_KEY || "dbb74894e82415a2f7ff0ec3a97e4183";
+const AAMARPAY_SANDBOX = process.env.AAMARPAY_SANDBOX !== "false";
+const AAMARPAY_BASE = AAMARPAY_SANDBOX ? "https://sandbox.aamarpay.com" : "https://secure.aamarpay.com";
 
 // ========================
 // MIDDLEWARE
@@ -90,6 +97,8 @@ async function initDB() {
   await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id)`;
   await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_number VARCHAR(20) UNIQUE`;
   await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW()`;
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_status VARCHAR(50) DEFAULT 'Pending'`;
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS transaction_id VARCHAR(100)`;
 
   console.log("Database tables ready");
 }
@@ -328,6 +337,116 @@ app.put("/api/orders/:id/status", auth, admin, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// ========================
+// AAMARPAY PAYMENT ROUTES
+// ========================
+app.post("/api/payment/initiate", auth, async (req, res) => {
+  try {
+    const { full_name, email, phone, address, city, zip, items, total } = req.body;
+    if (!full_name || !email || !address || !items || !total) {
+      return res.status(400).json({ error: "Name, email, address, items and total are required" });
+    }
+
+    // Create order with payment_status = Pending
+    const tracking_number = generateTrackingNumber();
+    const order = await sql`
+      INSERT INTO orders (user_id, tracking_number, full_name, email, phone, address, city, zip, items, total, status, payment_status)
+      VALUES (${req.user.id}, ${tracking_number}, ${full_name}, ${email}, ${phone || ""}, ${address}, ${city || ""}, ${zip || ""}, ${JSON.stringify(items)}, ${total}, 'Processing', 'Pending')
+      RETURNING *
+    `;
+
+    const orderId = order[0].id;
+    const tran_id = `NS-${orderId}-${Date.now()}`;
+
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+
+    // Call AmarPay JSON API
+    const paymentData = {
+      store_id: AAMARPAY_STORE_ID,
+      signature_key: AAMARPAY_SIGNATURE_KEY,
+      tran_id: tran_id,
+      amount: parseFloat(total).toFixed(2),
+      currency: "BDT",
+      desc: `NeonStore Order #${orderId}`,
+      cus_name: full_name,
+      cus_email: email,
+      cus_phone: phone || "N/A",
+      cus_add1: address,
+      cus_city: city || "N/A",
+      cus_country: "Bangladesh",
+      success_url: `${baseUrl}/api/payment/success`,
+      fail_url: `${baseUrl}/api/payment/fail`,
+      cancel_url: `${baseUrl}/api/payment/cancel`,
+      type: "json",
+      opt_a: String(orderId),
+      opt_b: String(req.user.id),
+    };
+
+    const response = await fetch(`${AAMARPAY_BASE}/jsonpost.php`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(paymentData),
+    });
+
+    const result = await response.json();
+
+    if (result.result === "true" && result.payment_url) {
+      // Store transaction_id on order
+      await sql`UPDATE orders SET transaction_id = ${tran_id} WHERE id = ${orderId}`;
+      res.json({ payment_url: result.payment_url, order_id: orderId });
+    } else {
+      // Payment initiation failed — mark order cancelled
+      await sql`UPDATE orders SET payment_status = 'Failed', status = 'Cancelled' WHERE id = ${orderId}`;
+      res.status(400).json({ error: "Payment gateway error. Please try again." });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// AmarPay redirects here via POST after successful payment
+app.post("/api/payment/success", async (req, res) => {
+  try {
+    const { opt_a, mer_txnid, pay_status, status_code, amount } = req.body;
+    const orderId = opt_a;
+
+    if (status_code === "2") {
+      await sql`
+        UPDATE orders SET payment_status = 'Paid', transaction_id = ${mer_txnid || ""}, updated_at = NOW()
+        WHERE id = ${orderId}
+      `;
+    }
+
+    res.redirect(`/payment-success.html?order_id=${orderId}`);
+  } catch (err) {
+    res.redirect("/payment-success.html?error=1");
+  }
+});
+
+// AmarPay redirects here via POST after failed payment
+app.post("/api/payment/fail", async (req, res) => {
+  try {
+    const { opt_a } = req.body;
+    const orderId = opt_a;
+
+    if (orderId) {
+      await sql`
+        UPDATE orders SET payment_status = 'Failed', status = 'Cancelled', updated_at = NOW()
+        WHERE id = ${orderId}
+      `;
+    }
+
+    res.redirect(`/payment-fail.html?order_id=${orderId || ""}`);
+  } catch (err) {
+    res.redirect("/payment-fail.html?error=1");
+  }
+});
+
+// AmarPay redirects here when user cancels
+app.get("/api/payment/cancel", async (req, res) => {
+  res.redirect("/payment-fail.html?cancelled=1");
 });
 
 // ========================
